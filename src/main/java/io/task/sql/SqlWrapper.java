@@ -8,4 +8,6 @@ public interface SqlWrapper {
 	<K, V> Map<K, V> queryForMap(String sql, RowMapper<Map.Entry<K, V>> rowMapper);
 	
 	<T> List<T> queryForList(String sql, RowMapper<T> rowMapper);
+	
+	void setConnectionWrapper(ConnectionWrapper connectionWrapper);
 }

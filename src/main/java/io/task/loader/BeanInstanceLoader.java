@@ -10,6 +10,7 @@ import io.task.model.BeanPropertyModel;
 import io.task.model.BeanPropertyModel.PropertyModel;
 import io.task.spring.SpringApplicationContextWrapper;
 import io.task.tasks.Task;
+import io.task.tasks.group.TaskGroup;
 import io.task.util.BeanUtil;
 import io.task.util.ClassUtil;
 import io.task.util.MapUtil;
@@ -28,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class BeanInstanceLoader implements BeanLoader<Map<String, Task>>
+public class BeanInstanceLoader implements BeanLoader<Void>
 {
 	private static final Logger	logger	= LoggerFactory.getLogger(BeanInstanceLoader.class);
 
@@ -47,14 +48,14 @@ public class BeanInstanceLoader implements BeanLoader<Map<String, Task>>
 	private Map<String, Object> virtualPropCirDepMap = new HashMap<String, Object>();
 
 
-	public Map<String, Task> getTaskMap()
-	{
-		return this.taskMap;
-	}
+//	public Map<String, Task> getTaskMap()
+//	{
+//		return this.taskMap;
+//	}
 
 
 	@Override
-	public Map<String, Task> load()
+	public Void load()
 	{
 		if (logger.isInfoEnabled() == true) {
 			logger.info(TaskConstant.START_STRING);
@@ -66,6 +67,8 @@ public class BeanInstanceLoader implements BeanLoader<Map<String, Task>>
 			taskMap = new HashMap<String, Task>(MapUtil.getOptimumMapSize(beanModelMap.size()));
 
 			loadBeans();
+			
+			TaskGroup.setTaskMap(taskMap);
 
 		} catch (Exception e) {
 			logger.error("{}",e);
@@ -82,7 +85,7 @@ public class BeanInstanceLoader implements BeanLoader<Map<String, Task>>
 		if (logger.isInfoEnabled() == true) {
 			logger.info(TaskConstant.END_STRING);
 		}
-		return taskMap;
+		return null;
 	}
 
 

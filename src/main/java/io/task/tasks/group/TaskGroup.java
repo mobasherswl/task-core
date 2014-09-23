@@ -19,10 +19,9 @@ import java.util.Map;
  * Comments :
  * </pre>
  */
-public class TaskGroup extends io.task.tasks.Task
+public class TaskGroup extends Task
 {
 	private Map<String, Task>				groupMap;
-	private static Map<String, Task>		taskMap;
 	private String								defaultTaskId;
 
 
@@ -73,7 +72,7 @@ public class TaskGroup extends io.task.tasks.Task
 		logger.info("Starting task ID: {}",nextTaskId);
 		logger.debug(dataMap.toString());
 		while (groupMap.containsKey(nextTaskId) == true) {
-			task = taskMap.get(nextTaskId);
+			task = Task.getTask(nextTaskId);
 			if(task == null) {
 				String msg = StringUtil.mergeStrings("Group ID: ",getId()," contains invalid/unknown Task ID: ",nextTaskId);
 				logger.error(msg);
@@ -91,61 +90,6 @@ public class TaskGroup extends io.task.tasks.Task
 				logger.info("Next task ID: {}",nextTaskId);
 			}
 		}
-	}
-
-
-	public static void start(Map<String, Object> dataMap)
-	{
-		String nextTaskId = (String) dataMap.get(TaskConstant.NEXT_TASK_ID);
-		Task task;
-		boolean loop=true;
-
-		while (loop) {
-
-			if(StringUtil.isNullOrEmpty(nextTaskId))
-			{
-				logger.error("No next task ID. It's null or empty");
-				loop = false;
-			}
-			else
-			{
-				logger.info("Next task ID: {}",nextTaskId);
-	
-				task = taskMap.get(nextTaskId);
-	
-				if(task == null)
-				{
-					logger.error("No task found against task ID: {}", nextTaskId);
-					loop = false;
-				}
-				else
-				{
-					task.process(dataMap);
-					nextTaskId = (String) dataMap.get(TaskConstant.NEXT_TASK_ID);
-				}
-			}
-		}
-	}
-
-
-	/**<pre>
-	 * 
-	 * @author - Ahmed Mobasher Khan 
-	 * 
-	 * @param taskMap2 - 
-	 * </pre>
-	 */
-	public static void setTaskMap(Map<String, Task> taskMap)
-	{
-		TaskGroup.taskMap = taskMap;
-	}
-	
-	public static boolean taskExists(String taskId)
-	{
-		if(TaskGroup.taskMap == null || taskId == null)
-			return false;
-
-		return TaskGroup.taskMap.containsKey(taskId);
 	}
 
 }
