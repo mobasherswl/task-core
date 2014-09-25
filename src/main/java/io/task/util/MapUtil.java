@@ -16,4 +16,9 @@ public class MapUtil {
 	{
 		return (int) (itemCount/0.75 + 1);
 	}
+	
+	public static <T extends Map<K, V>, K, V> boolean isNullOrEmpty(T t)
+	{
+		return t == null || t.isEmpty();
+	}
 }

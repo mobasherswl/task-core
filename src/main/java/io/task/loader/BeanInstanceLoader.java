@@ -1,5 +1,6 @@
 package io.task.loader;
 
+import io.task.context.Context;
 import io.task.exception.BaseException;
 import io.task.exception.BeanCircularDependencyException;
 import io.task.exception.BeanSetterDelayedException;
@@ -10,7 +11,6 @@ import io.task.model.BeanPropertyModel;
 import io.task.model.BeanPropertyModel.PropertyModel;
 import io.task.spring.SpringApplicationContextWrapper;
 import io.task.tasks.Task;
-import io.task.tasks.group.TaskGroup;
 import io.task.util.BeanUtil;
 import io.task.util.ClassUtil;
 import io.task.util.MapUtil;
@@ -33,7 +33,7 @@ public class BeanInstanceLoader implements BeanLoader<Void>
 {
 	private static final Logger	logger	= LoggerFactory.getLogger(BeanInstanceLoader.class);
 
-	private Map<String, Task>		taskMap;	
+	private Map<String, Task>		taskContext;	
 	private Map<String, Object> beanMap = new HashMap<String, Object>();
 
 	private BeanLoader<Map<String, BeanModel>> beanLoader;
@@ -47,12 +47,7 @@ public class BeanInstanceLoader implements BeanLoader<Void>
 
 	private Map<String, Object> virtualPropCirDepMap = new HashMap<String, Object>();
 
-
-//	public Map<String, Task> getTaskMap()
-//	{
-//		return this.taskMap;
-//	}
-
+	private Context context;
 
 	@Override
 	public Void load()
@@ -64,15 +59,15 @@ public class BeanInstanceLoader implements BeanLoader<Void>
 		try {
 			beanModelMap = beanLoader.load();
 			beanPropModelMap = beanPropertyLoader.load();
-			taskMap = new HashMap<String, Task>(MapUtil.getOptimumMapSize(beanModelMap.size()));
+			taskContext = new HashMap<String, Task>(MapUtil.getOptimumMapSize(beanModelMap.size()));
 
 			loadBeans();
-			
-			TaskGroup.setTaskMap(taskMap);
+	
+			context.setTaskContext(taskContext);
 
 		} catch (Exception e) {
 			logger.error("{}",e);
-			MapUtil.clear(taskMap);
+			MapUtil.clear(taskContext);
 			throw new BaseException(e);
 		} finally {
 			MapUtil.clear(beanMap);
@@ -214,7 +209,8 @@ public class BeanInstanceLoader implements BeanLoader<Void>
 	
 					if(objInstance instanceof Task) 
 					{
-						taskMap.put(bean.getId(), (Task) objInstance);
+						taskContext.put(bean.getId(), (Task) objInstance);
+						((Task) objInstance).setContext(context);
 					}
 					else
 					{
@@ -431,6 +427,15 @@ public class BeanInstanceLoader implements BeanLoader<Void>
 	 */
 	public void setBeanPropertyLoader(BeanLoader<Map<String,BeanPropertyModel>> beanPropertyLoader) {
 		this.beanPropertyLoader = beanPropertyLoader;
+	}
+
+	public Context getContext() {
+		return context;
+	}
+
+
+	public void setContext(Context context) {
+		this.context = context;
 	}
 
 	private static class PropertyObject

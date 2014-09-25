@@ -72,7 +72,8 @@ public class TaskGroup extends Task
 		logger.info("Starting task ID: {}",nextTaskId);
 		logger.debug(dataMap.toString());
 		while (groupMap.containsKey(nextTaskId) == true) {
-			task = Task.getTask(nextTaskId);
+//			task = Task.getTask(nextTaskId);
+			task = getContext().getTask(nextTaskId);
 			if(task == null) {
 				String msg = StringUtil.mergeStrings("Group ID: ",getId()," contains invalid/unknown Task ID: ",nextTaskId);
 				logger.error(msg);
