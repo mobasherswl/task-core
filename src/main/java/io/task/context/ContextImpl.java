@@ -1,7 +1,7 @@
 package io.task.context;
 
 import io.task.exception.BaseException;
-import io.task.loader.BeanLoader;
+import io.task.loader.Loader;
 import io.task.tasks.Task;
 import io.task.util.MapUtil;
 import io.task.util.StringUtil;
@@ -17,7 +17,7 @@ public class ContextImpl implements Context {
 	protected static final Logger logger = LoggerFactory.getLogger(ContextImpl.class);
 
 	private Map<String, Task>		taskContext;
-	private BeanLoader<Void> beanLoader;
+	private Loader<Void> beanLoader;
 
 	@Override
 	public void start() throws BaseException {
@@ -73,11 +73,11 @@ public class ContextImpl implements Context {
 		}
 	}
 
-	public BeanLoader<Void> getBeanLoader() {
+	public Loader<Void> getBeanLoader() {
 		return beanLoader;
 	}
 
-	public void setBeanLoader(BeanLoader<Void> beanInstanceLoader) {
+	public void setBeanLoader(Loader<Void> beanInstanceLoader) {
 		this.beanLoader = beanInstanceLoader;
 	}
 

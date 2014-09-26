@@ -11,7 +11,6 @@
 
 package io.task.model;
 
-import java.util.List;
 
 /**
  * <pre>
@@ -30,7 +29,7 @@ public class BeanModel
 	private String					id;
 	private String					className;
 	private String 					type;
-	private List<BeanPropertyModel>	properties;
+	private BeanPropertyModel	beanProperties;
 
 
 	public String getId()
@@ -67,14 +66,14 @@ public class BeanModel
 	}
 
 
-	public List<BeanPropertyModel> getProperties()
-	{
-		return properties;
+	public BeanPropertyModel getBeanProperties() {
+		return beanProperties;
 	}
 
 
-	public void setProperties(List<BeanPropertyModel> properties)
-	{
-		this.properties = properties;
+	public void setBeanProperties(BeanPropertyModel beanProperties) {
+		this.beanProperties = beanProperties;
 	}
+
+
 }

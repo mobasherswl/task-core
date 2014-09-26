@@ -1,6 +1,6 @@
 package io.task.loader.database;
 
-import io.task.loader.BeanLoader;
+import io.task.loader.Loader;
 import io.task.model.BeanModel;
 import io.task.sql.RowMapper;
 import io.task.sql.SqlWrapper;
@@ -23,7 +23,7 @@ import static io.task.util.SqlConstant.*;
  * Comments :
  * </pre>
  */
-public class BeanDefinitionDatabaseLoader implements BeanLoader<Map<String, BeanModel>>
+public class BeanDefinitionLoader implements Loader<Map<String, BeanModel>>
 {
 	private SqlWrapper sqlWrapper = null;
 //	private static String			countQuery	= "select count(*) from bean";

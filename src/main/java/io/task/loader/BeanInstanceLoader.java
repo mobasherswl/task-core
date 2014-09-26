@@ -4,7 +4,7 @@ import io.task.context.Context;
 import io.task.exception.BaseException;
 import io.task.exception.BeanCircularDependencyException;
 import io.task.exception.BeanSetterDelayedException;
-import io.task.exception.MissingBeanException;
+import io.task.exception.BeanMissingException;
 import io.task.exception.VirtualBeanInstantiationException;
 import io.task.model.BeanModel;
 import io.task.model.BeanPropertyModel;
@@ -19,6 +19,7 @@ import io.task.util.TaskConstant;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -29,18 +30,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class BeanInstanceLoader implements BeanLoader<Void>
+public class BeanInstanceLoader implements Loader<Void>
 {
 	private static final Logger	logger	= LoggerFactory.getLogger(BeanInstanceLoader.class);
 
 	private Map<String, Task>		taskContext;	
 	private Map<String, Object> beanMap = new HashMap<String, Object>();
 
-	private BeanLoader<Map<String, BeanModel>> beanLoader;
-	private BeanLoader<Map<String,BeanPropertyModel>> beanPropertyLoader;
+	private Loader<Map<String, BeanModel>> beanLoader;
 	
 	private Map<String, BeanModel> beanModelMap;
-	private Map<String, BeanPropertyModel> beanPropModelMap;
 	
 	private Map<String, BeanModel> constrCirDepMap = new HashMap<String, BeanModel>();
 	private Map<PropertyObject, PropertyObject> delayedObjectMap = new HashMap<PropertyObject, BeanInstanceLoader.PropertyObject>();
@@ -58,12 +57,11 @@ public class BeanInstanceLoader implements BeanLoader<Void>
 
 		try {
 			beanModelMap = beanLoader.load();
-			beanPropModelMap = beanPropertyLoader.load();
 			taskContext = new HashMap<String, Task>(MapUtil.getOptimumMapSize(beanModelMap.size()));
 
 			loadBeans();
 	
-			context.setTaskContext(taskContext);
+			context.setTaskContext(Collections.unmodifiableMap(taskContext));
 
 		} catch (Exception e) {
 			logger.error("{}",e);
@@ -72,7 +70,6 @@ public class BeanInstanceLoader implements BeanLoader<Void>
 		} finally {
 			MapUtil.clear(beanMap);
 			MapUtil.clear(beanModelMap);
-			MapUtil.clear(beanPropModelMap);
 			MapUtil.clear(constrCirDepMap);
 			MapUtil.clear(delayedObjectMap);
 			MapUtil.clear(virtualPropCirDepMap);
@@ -116,19 +113,19 @@ public class BeanInstanceLoader implements BeanLoader<Void>
 	{
 		List<String> beanIdLst = new ArrayList<String>(beanModelMap.size());
 		List<String> constrBeanLst = new ArrayList<String>(beanModelMap.size());
-		Iterator<Entry<String, BeanPropertyModel>> itrBean = beanPropModelMap.entrySet().iterator();
+		Iterator<Entry<String, BeanModel>> itrBean = beanModelMap.entrySet().iterator();
 
 		while(itrBean.hasNext())
 		{
-			BeanPropertyModel bpm = itrBean.next().getValue();
+			BeanModel bm = itrBean.next().getValue();
 
-			if(bpm.getConstructor().isEmpty() == false)
+			if(bm.getBeanProperties().getConstructor().isEmpty() == false)
 			{
-				constrBeanLst.add(bpm.getBeanId());
+				constrBeanLst.add(bm.getId());
 			}
 			else
 			{
-				beanIdLst.add(bpm.getBeanId());
+				beanIdLst.add(bm.getId());
 			}
 		}		
 
@@ -167,7 +164,7 @@ public class BeanInstanceLoader implements BeanLoader<Void>
 
 		if(bean == null)
 		{
-			throw new MissingBeanException("Definition of bean ID: " + beanId + " is not found");
+			throw new BeanMissingException("Definition of bean ID: " + beanId + " is not found");
 		}
 
 		if(bean.getType().equals(TaskConstant.SPRING))
@@ -180,11 +177,11 @@ public class BeanInstanceLoader implements BeanLoader<Void>
 
 			if(objInstance == null)
 			{
-				BeanPropertyModel bpm = beanPropModelMap.get(bean.getId());
+				BeanPropertyModel bpm = bean.getBeanProperties();
 				
 				if(bpm == null)
 				{
-					throw new MissingBeanException("Definition of bean ID: " + beanId + " is not found");
+					throw new BeanMissingException("Definition of bean ID: " + beanId + " is not found");
 				}
 				
 				Class<?> clazz = bean.getType().equals(TaskConstant.VIRTUAL) ? null : Class.forName(bean.getClassName());
@@ -257,7 +254,19 @@ public class BeanInstanceLoader implements BeanLoader<Void>
 
 				for(String inheritBeanId : inheritBeanIds)
 				{
-					BeanPropertyModel ibpm = beanPropModelMap.get(inheritBeanId);
+					BeanModel bm = beanModelMap.get(inheritBeanId);
+
+					if(bm == null)
+					{
+						throw new BeanMissingException("No bean definition found against inherited bean ID: " + inheritBeanId);
+					}
+
+					BeanPropertyModel ibpm = bm.getBeanProperties();
+
+					if(ibpm == null)
+					{
+						throw new BeanMissingException("No bean properties found against inherited bean ID: " + inheritBeanId);
+					}
 
 					try
 					{
@@ -417,17 +426,10 @@ public class BeanInstanceLoader implements BeanLoader<Void>
 	/**
 	 * @param beanLoader the beanModelLoader to set
 	 */
-	public void setBeanLoader(BeanLoader<Map<String, BeanModel>> beanLoader) {
+	public void setBeanLoader(Loader<Map<String, BeanModel>> beanLoader) {
 		this.beanLoader = beanLoader;
 	}
 
-
-	/**
-	 * @param beanPropModelLoader the beanPropModelLoader to set
-	 */
-	public void setBeanPropertyLoader(BeanLoader<Map<String,BeanPropertyModel>> beanPropertyLoader) {
-		this.beanPropertyLoader = beanPropertyLoader;
-	}
 
 	public Context getContext() {
 		return context;

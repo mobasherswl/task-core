@@ -12,7 +12,7 @@
 package io.task.loader.database;
 
 import io.task.exception.BaseException;
-import io.task.loader.BeanLoader;
+import io.task.loader.Loader;
 import io.task.model.BeanPropertyModel;
 import io.task.model.BeanPropertyModel.PropertyModel;
 import io.task.sql.RowMapper;
@@ -37,7 +37,7 @@ import static io.task.util.SqlConstant.*;
  * Comments : 
  * </pre>
  */
-public class BeanPropertyDefinitionDatabaseLoader implements BeanLoader<Map<String, BeanPropertyModel>>
+public class BeanPropertyDefinitionLoader implements Loader<Map<String, BeanPropertyModel>>
 {	
 	protected SqlWrapper				sqlWrapper	= null;
 //	private static String			loadQuery	= "select bean_id,property_order,property_value_type,property_name,property_value,property_value_order from bean_property order by bean_id,property_order,property_value_order";

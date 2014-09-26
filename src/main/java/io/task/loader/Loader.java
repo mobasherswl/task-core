@@ -2,7 +2,7 @@ package io.task.loader;
 
 import io.task.exception.BaseException;
 
-public interface BeanLoader<T> {
+public interface Loader<T> {
 
 	T load() throws BaseException;
 }
