@@ -1,4 +1,4 @@
-package io.task.loader;
+package io.task.factory;
 
 import io.task.context.Context;
 import io.task.exception.BaseException;
@@ -6,6 +6,7 @@ import io.task.exception.BeanCircularDependencyException;
 import io.task.exception.BeanSetterDelayedException;
 import io.task.exception.BeanMissingException;
 import io.task.exception.VirtualBeanInstantiationException;
+import io.task.loader.Loader;
 import io.task.model.BeanModel;
 import io.task.model.BeanPropertyModel;
 import io.task.model.BeanPropertyModel.PropertyModel;
@@ -14,12 +15,13 @@ import io.task.tasks.Task;
 import io.task.util.BeanUtil;
 import io.task.util.ClassUtil;
 import io.task.util.MapUtil;
+import io.task.util.StringUtil;
 import io.task.util.TaskConstant;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -30,11 +32,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class BeanInstanceLoader implements Loader<Void>
+public class BeanFactoryImpl implements BeanFactory
 {
-	private static final Logger	logger	= LoggerFactory.getLogger(BeanInstanceLoader.class);
+	private static final Logger	logger	= LoggerFactory.getLogger(BeanFactoryImpl.class);
 
-	private Map<String, Task>		taskContext;	
+	private Map<String, Task>		taskMap;	
 	private Map<String, Object> beanMap = new HashMap<String, Object>();
 
 	private Loader<Map<String, BeanModel>> beanLoader;
@@ -42,7 +44,7 @@ public class BeanInstanceLoader implements Loader<Void>
 	private Map<String, BeanModel> beanModelMap;
 	
 	private Map<String, BeanModel> constrCirDepMap = new HashMap<String, BeanModel>();
-	private Map<PropertyObject, PropertyObject> delayedObjectMap = new HashMap<PropertyObject, BeanInstanceLoader.PropertyObject>();
+	private Map<PropertyObject, PropertyObject> delayedObjectMap = new HashMap<PropertyObject, BeanFactoryImpl.PropertyObject>();
 
 	private Map<String, Object> virtualPropCirDepMap = new HashMap<String, Object>();
 
@@ -57,19 +59,25 @@ public class BeanInstanceLoader implements Loader<Void>
 
 		try {
 			beanModelMap = beanLoader.load();
-			taskContext = new HashMap<String, Task>(MapUtil.getOptimumMapSize(beanModelMap.size()));
+			taskMap = new HashMap<String, Task>(MapUtil.getOptimumMapSize(beanModelMap.size()));
 
 			loadBeans();
 	
-			context.setTaskContext(Collections.unmodifiableMap(taskContext));
-
-		} catch (Exception e) {
+		}
+		catch (BaseException e) {
 			logger.error("{}",e);
-			MapUtil.clear(taskContext);
-			throw new BaseException(e);
-		} finally {
+			MapUtil.clear(taskMap);
 			MapUtil.clear(beanMap);
 			MapUtil.clear(beanModelMap);
+			throw e;
+		}
+		catch (Exception e) {
+			logger.error("{}",e);
+			MapUtil.clear(taskMap);
+			MapUtil.clear(beanMap);
+			MapUtil.clear(beanModelMap);
+			throw new BaseException(e);
+		} finally {
 			MapUtil.clear(constrCirDepMap);
 			MapUtil.clear(delayedObjectMap);
 			MapUtil.clear(virtualPropCirDepMap);
@@ -138,7 +146,7 @@ public class BeanInstanceLoader implements Loader<Void>
 	{
 		if (delayedObjectMap.isEmpty() == false)
 		{
-			Map<PropertyObject,PropertyObject> map = new HashMap<PropertyObject, BeanInstanceLoader.PropertyObject>(delayedObjectMap);
+			Map<PropertyObject,PropertyObject> map = new HashMap<PropertyObject, BeanFactoryImpl.PropertyObject>(delayedObjectMap);
 
 			for(Iterator<PropertyObject> itr = map.keySet().iterator(); itr.hasNext();)
 			{
@@ -158,7 +166,7 @@ public class BeanInstanceLoader implements Loader<Void>
 		}
 	}
 	
-	private void loadBean(String beanId) throws Exception
+	private void loadBean(String beanId)
 	{
 		BeanModel bean = beanModelMap.get(beanId);
 
@@ -184,7 +192,7 @@ public class BeanInstanceLoader implements Loader<Void>
 					throw new BeanMissingException("Definition of bean ID: " + beanId + " is not found");
 				}
 				
-				Class<?> clazz = bean.getType().equals(TaskConstant.VIRTUAL) ? null : Class.forName(bean.getClassName());
+				Class<?> clazz = bean.getType().equals(TaskConstant.VIRTUAL) ? null : getClass(bean.getClassName());
 				Map<String, Map<PropertyModel, Object>> virtualProperties = bpm.getVirtualProperties();
 	
 				if(virtualProperties.containsKey(TaskConstant.VIRTUAL_INHERIT_PROPERTY))
@@ -206,7 +214,7 @@ public class BeanInstanceLoader implements Loader<Void>
 	
 					if(objInstance instanceof Task) 
 					{
-						taskContext.put(bean.getId(), (Task) objInstance);
+						taskMap.put(bean.getId(), (Task) objInstance);
 						((Task) objInstance).setContext(context);
 					}
 					else
@@ -242,6 +250,19 @@ public class BeanInstanceLoader implements Loader<Void>
 		}
 	}
 	
+	private Class<?> getClass(String className) {
+		try {
+			if(StringUtil.isNullOrEmptyTrimmed(className) == false)
+			{
+				return ClassUtil.getClass(className);
+			}
+		} catch (ClassNotFoundException e) {
+			throw new BaseException(e);
+		}
+		return null;
+	}
+
+
 	private void resolveVirtualPropInheritance(BeanPropertyModel bpm) {
 
 		if(virtualPropCirDepMap.containsKey(bpm.getBeanId()) == false)
@@ -293,17 +314,32 @@ public class BeanInstanceLoader implements Loader<Void>
 	}
 
 
-	private Object invokeMethod(Class<?> clazz, Object objInstance, PropertyModel pm) throws Exception
+	private Object invokeMethod(Class<?> clazz, Object objInstance, PropertyModel pm)
 	{
 		Object[][] paramArr = parseProperty(pm, objInstance);
 		
-		Method method = clazz.getMethod(pm.getPropertyName(), (Class<?>[]) paramArr[0]);
+		Method method;
+		try {
+			method = clazz.getMethod(pm.getPropertyName(), (Class<?>[]) paramArr[0]);
+		} catch (SecurityException e) {
+			throw new BaseException(e);
+		} catch (NoSuchMethodException e) {
+			throw new BaseException(e);
+		}
 
-		return method.invoke(objInstance, paramArr[1]);
+		try {
+			return method.invoke(objInstance, paramArr[1]);
+		} catch (IllegalArgumentException e) {
+			throw new BaseException(e);
+		} catch (IllegalAccessException e) {
+			throw new BaseException(e);
+		} catch (InvocationTargetException e) {
+			throw new BaseException(e);
+		}
 
 	}
 
-	private Object invokeConstructor(Class<?> clazz, PropertyModel pm) throws Exception
+	private Object invokeConstructor(Class<?> clazz, PropertyModel pm)
 	{
 		Object[][] paramArr;
 		
@@ -315,13 +351,31 @@ public class BeanInstanceLoader implements Loader<Void>
 		
 		constrCirDepMap.remove(beanId);
 		
-		Constructor<?> constr = clazz.getConstructor((Class<?>[]) paramArr[0]);
+		Constructor<?> constr;
+
+		try {
+			constr = clazz.getConstructor((Class<?>[]) paramArr[0]);
+		} catch (SecurityException e) {
+			throw new BaseException(e);
+		} catch (NoSuchMethodException e) {
+			throw new BaseException(e);
+		}
 		
-		return constr.newInstance(paramArr[1]);
+		try {
+			return constr.newInstance(paramArr[1]);
+		} catch (IllegalArgumentException e) {
+			throw new BaseException(e);
+		} catch (InstantiationException e) {
+			throw new BaseException(e);
+		} catch (IllegalAccessException e) {
+			throw new BaseException(e);
+		} catch (InvocationTargetException e) {
+			throw new BaseException(e);
+		}
 
 	}
 	
-	private Object[][] parseProperty(PropertyModel pm, Object objInstance) throws Exception
+	private Object[][] parseProperty(PropertyModel pm, Object objInstance)
 	{
 		Object[][] arr = {null,null};
 		List<Class<?>> paramTypeList = new ArrayList<Class<?>>();
@@ -335,7 +389,7 @@ public class BeanInstanceLoader implements Loader<Void>
 		
 		while(itrType.hasNext())
 		{
-			Class<?> clazz = ClassUtil.getClass(itrType.next());
+			Class<?> clazz = getClass(itrType.next());
 
 			if(clazz == void.class)
 			{
@@ -398,7 +452,8 @@ public class BeanInstanceLoader implements Loader<Void>
 //		return (methodName.equals(clazz.getSimpleName()) || (pm != null && pm.equals(methodName))) || methodName.equals(TaskConstant.STATIC_METHOD);
 //	}
 
-	private Object createInstance(Class<?> clazz, BeanPropertyModel bpm) throws Exception {
+	private Object createInstance(Class<?> clazz, BeanPropertyModel bpm)
+	{
 		
 		Object obj = null;
 		
@@ -406,7 +461,13 @@ public class BeanInstanceLoader implements Loader<Void>
 		
 		if(pmMap.isEmpty())
 		{
-			obj = clazz.newInstance();			
+			try {
+				obj = clazz.newInstance();
+			} catch (InstantiationException e) {
+				throw new BaseException(e);
+			} catch (IllegalAccessException e) {
+				throw new BaseException(e);
+			}
 		}
 		else
 		{
@@ -487,5 +548,28 @@ public class BeanInstanceLoader implements Loader<Void>
 				return false;
 			return true;
 		}
+	}
+
+	@Override
+	public Task getTask(String taskId) {
+		return MapUtil.isNullOrEmpty(taskMap) || StringUtil.isNullOrEmptyTrimmed(taskId) ? null : taskMap.get(taskId);
+	}
+
+
+	@Override
+	public Object getBean(String beanId) {
+		return MapUtil.isNullOrEmpty(beanMap) || StringUtil.isNullOrEmptyTrimmed(beanId) ? null : beanMap.get(beanId);
+	}
+
+
+	@Override
+	public boolean beanExists(String beanId) {
+		return MapUtil.isNullOrEmpty(beanMap) || StringUtil.isNullOrEmptyTrimmed(beanId) ? false : beanMap.containsKey(beanId);
+	}
+
+
+	@Override
+	public boolean taskExists(String taskId) {
+		return MapUtil.isNullOrEmpty(taskMap) || StringUtil.isNullOrEmptyTrimmed(taskId) ? false : taskMap.containsKey(taskId);
 	}
 }

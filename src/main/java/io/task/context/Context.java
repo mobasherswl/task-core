@@ -14,5 +14,7 @@ public interface Context {
 	
 	void startFlow(Map<String, Object> dataMap);
 
-	void setTaskContext(Map<String, Task> taskContext);
+	Object getBean(String beanId);
+	
+	boolean beanExists(String beanId);
 }
