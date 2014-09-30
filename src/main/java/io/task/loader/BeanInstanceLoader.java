@@ -337,6 +337,11 @@ public class BeanInstanceLoader implements Loader<Void>
 		{
 			Class<?> clazz = ClassUtil.getClass(itrType.next());
 
+			if(clazz == void.class)
+			{
+				break;
+			}
+
 			paramTypeList.add(clazz);
 			value=itrValue.next();
 

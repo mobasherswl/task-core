@@ -17,6 +17,7 @@ public class ClassUtil {
 		primitiveDataTypeMap.put("double",double.class);
 		primitiveDataTypeMap.put("char",char.class);
 		primitiveDataTypeMap.put("boolean",boolean.class);
+		primitiveDataTypeMap.put("void",void.class);
 		
 		builtinDataTypeMap.putAll(primitiveDataTypeMap);
 
@@ -39,7 +40,6 @@ public class ClassUtil {
 		builtinDataTypeMap.put(Character.class.getName(), Character.class);
 		builtinDataTypeMap.put(Boolean.class.getName(), Boolean.class);
 		builtinDataTypeMap.put(String.class.getName(), String.class);
-//		primitiveClassMap.put("void",void.class);
 	}
 
 	public static boolean isPrimitiveDataType(String className)
