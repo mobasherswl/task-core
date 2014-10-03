@@ -11,6 +11,7 @@
 
 package io.task.tasks;
 
+import io.task.util.MapUtil;
 import io.task.util.TaskConstant;
 
 import java.util.HashMap;
@@ -30,7 +31,7 @@ import java.util.Map;
 public class PropertyMapperTask extends Task
 {
 	
-	private Map<String,Map<String,String>> propNameMap = new HashMap<String, Map<String, String>>();
+	private Map<String,Map<Object,Object>> propNameMap = new HashMap<String, Map<Object, Object>>();
 	private String nextTaskId;
 
 	/* (non-Javadoc)
@@ -47,26 +48,48 @@ public class PropertyMapperTask extends Task
 			Object obj = dataMap.get(propName);
 			
 			if(obj != null) {
-				Map<String, String> map = propNameMap.get(propName);
-				dataMap.put(map.get("newKey"), map.get(obj) == null ? obj : map.get(obj));
+				Map<Object, Object> map = propNameMap.get(propName);
+				dataMap.put((String) map.get("newKey"), map.get(obj) == null ? obj : map.get(obj));
 			}
 		}
+
+		Map<Object, Object> map = propNameMap.get("addData");
+		
+		if(MapUtil.isNullOrEmpty(map) == false)
+		{
+			for(java.util.Map.Entry<Object, Object> entry : map.entrySet())
+			{
+				dataMap.put((String) entry.getKey(), entry.getValue());
+			}
+		}
+		
 		if(logger.isDebugEnabled()) {
 			logger.debug("After: dataMap: {}, propertyMap: {}", dataMap.toString(), propNameMap.toString());
 		}
 		dataMap.put(TaskConstant.NEXT_TASK_ID, nextTaskId);
 	}
 	
-	public void setPropertyMap(String oldKey, String newKey, String oldValue, String newValue)
+	public void setPropertyMap(String oldKey, String newKey, Object oldValue, Object newValue)
 	{
-		Map<String, String> map = propNameMap.get(oldKey);
+		Map<Object, Object> map = propNameMap.get(oldKey);
 		
 		if(map == null) {
-			map = new HashMap<String, String>();
+			map = new HashMap<Object, Object>();
 			propNameMap.put(oldKey, map);
 			map.put("newKey", newKey);
 		}
 		map.put(oldValue, newValue);
+	}
+	
+	public void addData(String key, Object value)
+	{
+		Map<Object, Object> map = propNameMap.get("addData");
+		
+		if(map == null) {
+			map = new HashMap<Object, Object>();
+			propNameMap.put("addData", map);
+		}
+		map.put(key, value);
 	}
 	
 	/**<pre>
