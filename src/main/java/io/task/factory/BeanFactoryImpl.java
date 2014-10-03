@@ -1,10 +1,9 @@
 package io.task.factory;
 
-import io.task.context.Context;
 import io.task.exception.BaseException;
 import io.task.exception.BeanCircularDependencyException;
-import io.task.exception.BeanSetterDelayedException;
 import io.task.exception.BeanMissingException;
+import io.task.exception.BeanSetterDelayedException;
 import io.task.exception.VirtualBeanInstantiationException;
 import io.task.loader.Loader;
 import io.task.model.BeanModel;
@@ -27,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +47,6 @@ public class BeanFactoryImpl implements BeanFactory
 	private Map<PropertyObject, PropertyObject> delayedObjectMap = new HashMap<PropertyObject, BeanFactoryImpl.PropertyObject>();
 
 	private Map<String, Object> virtualPropCirDepMap = new HashMap<String, Object>();
-
-	private Context context;
 
 	@Override
 	public Void load()
@@ -127,7 +125,7 @@ public class BeanFactoryImpl implements BeanFactory
 		{
 			BeanModel bm = itrBean.next().getValue();
 
-			if(bm.getBeanProperties().getConstructor().isEmpty() == false)
+			if(bm.getProperties() != null && bm.getProperties().getConstructor().isEmpty() == false)
 			{
 				constrBeanLst.add(bm.getId());
 			}
@@ -185,7 +183,7 @@ public class BeanFactoryImpl implements BeanFactory
 
 			if(objInstance == null)
 			{
-				BeanPropertyModel bpm = bean.getBeanProperties();
+				BeanPropertyModel bpm = bean.getProperties();
 				
 				if(bpm == null)
 				{
@@ -193,7 +191,7 @@ public class BeanFactoryImpl implements BeanFactory
 				}
 				
 				Class<?> clazz = bean.getType().equals(TaskConstant.VIRTUAL) ? null : getClass(bean.getClassName());
-				Map<String, Map<PropertyModel, Object>> virtualProperties = bpm.getVirtualProperties();
+				Map<String, Set<PropertyModel>> virtualProperties = bpm.getVirtualProperties();
 	
 				if(virtualProperties.containsKey(TaskConstant.VIRTUAL_INHERIT_PROPERTY))
 				{
@@ -215,18 +213,17 @@ public class BeanFactoryImpl implements BeanFactory
 					if(objInstance instanceof Task) 
 					{
 						taskMap.put(bean.getId(), (Task) objInstance);
-						((Task) objInstance).setContext(context);
 					}
 					else
 					{
 						beanMap.put(bean.getId(), objInstance);
 					}
 	
-					Iterator<Map<PropertyModel, Object>> itrPmMap = bpm.getProperties().values().iterator();
+					Iterator<Set<PropertyModel>> itrPmMap = bpm.getProperties().values().iterator();
 			
 					while(itrPmMap.hasNext())
 					{
-						Iterator<PropertyModel> itrPm = itrPmMap.next().keySet().iterator();
+						Iterator<PropertyModel> itrPm = itrPmMap.next().iterator();
 						
 						while(itrPm.hasNext())
 						{
@@ -271,36 +268,41 @@ public class BeanFactoryImpl implements BeanFactory
 			{
 				virtualPropCirDepMap.put(bpm.getBeanId(), null);
 	
-				List<String> inheritBeanIds = bpm.getVirtualProperties().remove(TaskConstant.VIRTUAL_INHERIT_PROPERTY).keySet().iterator().next().getPropertyValues();
+				Iterator<PropertyModel> inheritBeanItr = bpm.getVirtualProperties().remove(TaskConstant.VIRTUAL_INHERIT_PROPERTY).iterator();
 
-				for(String inheritBeanId : inheritBeanIds)
+				while(inheritBeanItr.hasNext())
 				{
-					BeanModel bm = beanModelMap.get(inheritBeanId);
-
-					if(bm == null)
+					PropertyModel pm = inheritBeanItr.next();
+					
+					for(String inheritBeanId : pm.getPropertyValues())
 					{
-						throw new BeanMissingException("No bean definition found against inherited bean ID: " + inheritBeanId);
-					}
-
-					BeanPropertyModel ibpm = bm.getBeanProperties();
-
-					if(ibpm == null)
-					{
-						throw new BeanMissingException("No bean properties found against inherited bean ID: " + inheritBeanId);
-					}
-
-					try
-					{
-						resolveVirtualPropInheritance(ibpm);
-
-						Map<String, Map<PropertyModel,Object>> newMap = new HashMap<String, Map<PropertyModel,Object>>(ibpm.getProperties());
-
-						newMap.putAll(bpm.getProperties());
-						bpm.setProperties(newMap);
-					}
-					catch(BeanCircularDependencyException e)
-					{
-						logger.warn("For bean ID: " + bpm.getBeanId(), e);
+						BeanModel bm = beanModelMap.get(inheritBeanId);
+	
+						if(bm == null)
+						{
+							throw new BeanMissingException("No bean definition found against inherited bean ID: " + inheritBeanId);
+						}
+	
+						BeanPropertyModel ibpm = bm.getProperties();
+	
+						if(ibpm == null)
+						{
+							throw new BeanMissingException("No bean properties found against inherited bean ID: " + inheritBeanId);
+						}
+	
+						try
+						{
+							resolveVirtualPropInheritance(ibpm);
+	
+							Map<String, Set<PropertyModel>> newMap = new HashMap<String, Set<PropertyModel>>(ibpm.getProperties());
+	
+							newMap.putAll(bpm.getProperties());
+							bpm.setProperties(newMap);
+						}
+						catch(BeanCircularDependencyException e)
+						{
+							logger.warn("For bean ID: " + bpm.getBeanId(), e);
+						}
 					}
 				}
 	
@@ -457,7 +459,7 @@ public class BeanFactoryImpl implements BeanFactory
 		
 		Object obj = null;
 		
-		Map<String, Map<PropertyModel, Object>> pmMap = bpm.getConstructor();
+		Map<String, Set<PropertyModel>> pmMap = bpm.getConstructor();
 		
 		if(pmMap.isEmpty())
 		{
@@ -471,7 +473,7 @@ public class BeanFactoryImpl implements BeanFactory
 		}
 		else
 		{
-			PropertyModel pm = pmMap.values().iterator().next().keySet().iterator().next();
+			PropertyModel pm = pmMap.values().iterator().next().iterator().next();//Retrieving one of the available constructors
 
 			if(BeanUtil.isConstructorMethod(clazz, pm.getPropertyName()))
 			{
@@ -496,15 +498,6 @@ public class BeanFactoryImpl implements BeanFactory
 		this.beanLoader = beanLoader;
 	}
 
-
-	public Context getContext() {
-		return context;
-	}
-
-
-	public void setContext(Context context) {
-		this.context = context;
-	}
 
 	private static class PropertyObject
 	{

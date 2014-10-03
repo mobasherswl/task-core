@@ -11,6 +11,15 @@
 
 package io.task.loader.database;
 
+import static io.task.util.SqlConstant.COL_BEAN_ID;
+import static io.task.util.SqlConstant.COL_CLASS_NAME;
+import static io.task.util.SqlConstant.COL_PROPERTY_NAME;
+import static io.task.util.SqlConstant.COL_PROPERTY_ORDER;
+import static io.task.util.SqlConstant.COL_PROPERTY_VALUE;
+import static io.task.util.SqlConstant.COL_PROPERTY_VALUE_ORDER;
+import static io.task.util.SqlConstant.COL_PROPERTY_VALUE_TYPE;
+import static io.task.util.SqlConstant.COL_TYPE;
+import static io.task.util.SqlConstant.QRY_SEL_TBL_BEAN_PROPERTY;
 import io.task.exception.BaseException;
 import io.task.loader.Loader;
 import io.task.model.BeanPropertyModel;
@@ -22,9 +31,9 @@ import io.task.util.TaskConstant;
 
 import java.sql.ResultSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
-
-import static io.task.util.SqlConstant.*;
+import java.util.Set;
 
 /**<pre>
  * Created By : Ahmed Mobasher Khan
@@ -92,7 +101,7 @@ public class BeanPropertyDefinitionLoader implements Loader<Map<String, BeanProp
 					}
 
 					@SuppressWarnings("unchecked")
-					Map<PropertyModel, Object> propMap = (Map<PropertyModel, Object>) currentState.get("propMap");
+					Set<PropertyModel> propSet = (Set<PropertyModel>) currentState.get("propMap");
 
 					if(propertyName.equals(prevPropertyName) == false/* || propertyOrder != prevPropertyOrder */) {
 
@@ -102,10 +111,10 @@ public class BeanPropertyDefinitionLoader implements Loader<Map<String, BeanProp
 							{
 								throw new BaseException("Multiple constructor / static methods found for bean ID: " + beanId);
 							}
-							propMap = new HashMap<BeanPropertyModel.PropertyModel, Object>();
-							bpm.getConstructor().put(propertyName, propMap);
+							propSet = new HashSet<PropertyModel>();
+							bpm.getConstructor().put(propertyName, propSet);
 						}
-						else if(beanType.equals(TaskConstant.VIRTUAL) == false && bpm.getConstructor().containsKey(TaskConstant.VIRTUAL_CONSTRUCTOR_METHOD) && bpm.getConstructor().get(TaskConstant.VIRTUAL_CONSTRUCTOR_METHOD).keySet().iterator().next().getPropertyName().equals(propertyName))
+						else if(beanType.equals(TaskConstant.VIRTUAL) == false && bpm.getConstructor().containsKey(TaskConstant.VIRTUAL_CONSTRUCTOR_METHOD) && bpm.getConstructor().get(TaskConstant.VIRTUAL_CONSTRUCTOR_METHOD).iterator().next().getPropertyName().equals(propertyName))
 						{
 							bpm.getConstructor().remove(TaskConstant.VIRTUAL_CONSTRUCTOR_METHOD);
 //							propMap = new HashMap<BeanPropertyModel.PropertyModel, Object>();
@@ -113,13 +122,13 @@ public class BeanPropertyDefinitionLoader implements Loader<Map<String, BeanProp
 						}
 						else if(propertyName.startsWith(TaskConstant.VIRTUAL))
 						{
-							propMap = new HashMap<BeanPropertyModel.PropertyModel, Object>();
-							bpm.getVirtualProperties().put(propertyName, propMap);
+							propSet = new HashSet<BeanPropertyModel.PropertyModel>();
+							bpm.getVirtualProperties().put(propertyName, propSet);
 						}
 						else
 						{
-							propMap = new HashMap<BeanPropertyModel.PropertyModel, Object>();
-							bpm.getProperties().put(propertyName, propMap);
+							propSet = new HashSet<BeanPropertyModel.PropertyModel>();
+							bpm.getProperties().put(propertyName, propSet);
 						}
 						pm = new PropertyModel();
 
@@ -127,7 +136,7 @@ public class BeanPropertyDefinitionLoader implements Loader<Map<String, BeanProp
 						pm.setParent(bpm);
 						pm.setPropertyOrder(propertyOrder);
 						
-						propMap.put(pm, null);
+						propSet.add(pm);
 					}
 					
 					else if(propertyOrder != prevPropertyOrder)
@@ -138,7 +147,7 @@ public class BeanPropertyDefinitionLoader implements Loader<Map<String, BeanProp
 						pm.setParent(bpm);
 						pm.setPropertyOrder(propertyOrder);
 						
-						propMap.put(pm, null);
+						propSet.add(pm);
 					}
 
 					pm.getPropertyValueTypes().add(rs.getString(COL_PROPERTY_VALUE_TYPE));
@@ -153,7 +162,7 @@ public class BeanPropertyDefinitionLoader implements Loader<Map<String, BeanProp
 					currentState.put("bpm", bpm);
 					currentState.put("pm", pm);
 					currentState.put("prevPropertyOrder", prevPropertyOrder);
-					currentState.put("propMap", propMap);
+					currentState.put("propMap", propSet);
 					
 					final BeanPropertyModel ebpm = bpm;
 	

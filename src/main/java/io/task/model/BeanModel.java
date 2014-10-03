@@ -29,7 +29,7 @@ public class BeanModel
 	private String					id;
 	private String					className;
 	private String 					type;
-	private BeanPropertyModel	beanProperties;
+	private BeanPropertyModel	properties = new BeanPropertyModel();
 
 
 	public String getId()
@@ -66,13 +66,13 @@ public class BeanModel
 	}
 
 
-	public BeanPropertyModel getBeanProperties() {
-		return beanProperties;
+	public BeanPropertyModel getProperties() {
+		return properties;
 	}
 
 
-	public void setBeanProperties(BeanPropertyModel beanProperties) {
-		this.beanProperties = beanProperties;
+	public void setProperties(BeanPropertyModel properties) {
+		this.properties = properties;
 	}
 
 

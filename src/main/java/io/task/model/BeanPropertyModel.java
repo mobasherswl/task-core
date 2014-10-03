@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * <pre>
@@ -31,9 +32,9 @@ import java.util.Map;
 public class BeanPropertyModel
 {
 	private String			beanId;
-	private Map<String, Map<PropertyModel,Object>> properties = new HashMap<String, Map<PropertyModel,Object>>();
-	private Map<String, Map<PropertyModel,Object>> constructor = new HashMap<String, Map<PropertyModel,Object>>();
-	private Map<String, Map<PropertyModel,Object>> virtualProperties = new HashMap<String, Map<PropertyModel,Object>>();
+	private Map<String, Set<PropertyModel>> properties = new HashMap<String, Set<PropertyModel>>();
+	private Map<String, Set<PropertyModel>> constructor = new HashMap<String, Set<PropertyModel>>();
+	private Map<String, Set<PropertyModel>> virtualProperties = new HashMap<String, Set<PropertyModel>>();
 	
 	public String getBeanId()
 	{
@@ -54,7 +55,7 @@ public class BeanPropertyModel
 	 * @return - Returns the properties
 	 * </pre>
 	 */
-	public Map<String, Map<PropertyModel, Object>> getProperties()
+	public Map<String, Set<PropertyModel>> getProperties()
 	{
 		return properties;
 	}
@@ -67,28 +68,28 @@ public class BeanPropertyModel
 	 * @param properties - the properties to set
 	 * </pre>
 	 */
-	public void setProperties(Map<String, Map<PropertyModel, Object>> properties)
+	public void setProperties(Map<String, Set<PropertyModel>> properties)
 	{
 		this.properties = properties;
 	}
 
 
-	public Map<String, Map<PropertyModel, Object>> getConstructor() {
+	public Map<String, Set<PropertyModel>> getConstructor() {
 		return constructor;
 	}
 
 
-	public void setConstructor(Map<String, Map<PropertyModel, Object>> constructor) {
+	public void setConstructor(Map<String, Set<PropertyModel>> constructor) {
 		this.constructor = constructor;
 	}
 
 
-	public Map<String, Map<PropertyModel, Object>> getVirtualProperties() {
+	public Map<String, Set<PropertyModel>> getVirtualProperties() {
 		return virtualProperties;
 	}
 
 
-	public void setVirtualProperties(Map<String, Map<PropertyModel, Object>> virtualProperties) {
+	public void setVirtualProperties(Map<String, Set<PropertyModel>> virtualProperties) {
 		this.virtualProperties = virtualProperties;
 	}
 

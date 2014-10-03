@@ -6,6 +6,7 @@ import io.task.loader.Loader;
 import io.task.model.BeanModel;
 import io.task.model.BeanPropertyModel;
 import io.task.util.MapUtil;
+import io.task.util.TaskConstant;
 
 import java.util.Map;
 
@@ -26,13 +27,13 @@ public class BeanDatabaseLoader implements Loader<Map<String, BeanModel>> {
 			{
 				BeanPropertyModel bpm = beanPropertyModelMap.get(bm.getId());
 				
-				if(bpm == null)
+				if(bpm == null && bm.getType().equals(TaskConstant.SPRING) == false)
 				{
 					throw new BeanMissingException("No bean properties found against bean ID: " + bm.getId());
 				}
 				else
 				{
-					bm.setBeanProperties(bpm);
+					bm.setProperties(bpm);
 				}
 			}
 			

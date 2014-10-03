@@ -13,4 +13,5 @@ public interface TaskConstant
 	String VIRTUAL_INHERIT_PROPERTY = "virtualInheritProperty";
 	String VIRTUAL_BEAN = "virtualBean";
 	String SPRING = "spring";
+	String DEFAULT_TASK = "defaultTask";
 }
