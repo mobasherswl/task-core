@@ -3,7 +3,7 @@ package io.task.util;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
-public class ExceptionUtil {
+public class ThrowableUtil {
 
 	public static String getStackTrace(Throwable throwable)
 	{
