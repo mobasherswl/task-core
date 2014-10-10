@@ -21,4 +21,9 @@ public class MapUtil {
 	{
 		return t == null || t.isEmpty();
 	}
+	
+	public static boolean isMap(Object obj)
+	{
+		return obj != null && obj instanceof Map;
+	}
 }
