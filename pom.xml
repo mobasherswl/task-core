@@ -47,8 +47,9 @@
 				<configuration>
 					<archive>
 						<manifestEntries>
-							<Build-Number>${buildNumber}</Build-Number>
-							<Build-Timestamp>${build.timestamp}</Build-Timestamp>
+							<BuildScmBranch>${scmBranch}</BuildScmBranch>
+							<BuildNumber>${buildNumber}</BuildNumber>
+							<BuildTimestamp>${build.timestamp}</BuildTimestamp>
  						</manifestEntries>
 					    <manifest>
 							<!-- mainClass>com.ivr.javaagi.Main</mainClass-->
@@ -63,6 +64,18 @@
 				<artifactId>maven-source-plugin</artifactId>
 				<version>2.3</version>
 				<configuration>
+					<archive>
+						<manifestEntries>
+							<BuildScmBranch>${scmBranch}</BuildScmBranch>
+							<BuildNumber>${buildNumber}</BuildNumber>
+							<BuildTimestamp>${build.timestamp}</BuildTimestamp>
+ 						</manifestEntries>
+					    <manifest>
+							<!-- mainClass>com.ivr.javaagi.Main</mainClass-->
+							<addClasspath>true</addClasspath>
+							<!-- classpathPrefix>lib/</classpathPrefix> <classpathLayoutType>repository</classpathLayoutType -->
+						</manifest>
+					</archive>
 				    <includePom>true</includePom>
 				</configuration>
 				<executions>
